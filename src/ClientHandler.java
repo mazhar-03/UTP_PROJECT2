@@ -26,6 +26,10 @@ class ClientHandler implements Callable<Void> {
                 clientName = "Client-" + clientSocket.getPort();
             }
 
+            writer.write("You are registered as " + clientName + ".");
+            writer.newLine();
+            writer.flush();
+
             String message;
             while ((message = reader.readLine()) != null) {
                 if (message.equalsIgnoreCase("exit")) {
