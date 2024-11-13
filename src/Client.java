@@ -3,8 +3,8 @@ import java.net.Socket;
 import java.util.Scanner;
 
 public class Client {
-    private String serverHost;
-    private int serverPort;
+    private final String serverHost;
+    private final int serverPort;
     private Socket socket;
     private BufferedReader reader;
     private BufferedWriter writer;
