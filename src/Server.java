@@ -2,21 +2,19 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class Server {
     private int port;
     private String serverName;
     private List<String> bannedPhrases;
+    private final Map<String, Socket> clients;
     private final ExecutorService clientPool;
-    private final List<Socket> connectedClients;
 
     public Server(String configFilePath) {
         loadConfiguration(configFilePath);
+        this.clients = new ConcurrentHashMap<>();
         this.clientPool = Executors.newCachedThreadPool();
-        this.connectedClients = Collections.synchronizedList(new ArrayList<>());
     }
 
     private void loadConfiguration(String configFilePath) {
@@ -42,17 +40,16 @@ public class Server {
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                connectedClients.add(clientSocket);
                 clientPool.submit(new ClientHandler(clientSocket, this));
             }
         } catch (IOException e) {
             System.err.println("Error in server: " + e.getMessage());
         } finally {
-            shutdownExecutor();
+            shutdownClientPool();
         }
     }
 
-    private void shutdownExecutor() {
+    private void shutdownClientPool() {
         clientPool.shutdown();
         try {
             if (!clientPool.awaitTermination(60, TimeUnit.SECONDS)) {
@@ -63,29 +60,98 @@ public class Server {
         }
     }
 
+    public synchronized void addClient(String username, Socket socket) {
+        clients.put(username, socket);
+    }
+
+    public synchronized void removeClient(Socket socket) {
+        String username = null;
+        for (Map.Entry<String, Socket> entry : clients.entrySet()) {
+            if (entry.getValue().equals(socket)) {
+                username = entry.getKey();
+                break;
+            }
+        }
+        if (username != null) {
+            clients.remove(username);
+        }
+    }
+
+    public synchronized List<String> getClientNames() {
+        return new ArrayList<>(clients.keySet());
+    }
+
+    public synchronized boolean sendMessageToUser(String message, String username) {
+        if (containsBannedPhrase(message)) {
+            return false;
+        }
+        Socket socket = clients.get(username);
+        if (socket != null) {
+            try {
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                writer.write(message);
+                writer.newLine();
+                writer.flush();
+                return true;
+            } catch (IOException e) {
+                System.err.println("Error sending message to user " + username + ": " + e.getMessage());
+            }
+        }
+        return false;
+    }
+
     public synchronized void broadcastMessage(String message, Socket senderSocket) {
-        synchronized (connectedClients) {
-            for (Socket clientSocket : connectedClients) {
-                if (clientSocket != senderSocket) {
-                    try {
-                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-                        writer.write(message);
-                        writer.newLine();
-                        writer.flush();
-                    } catch (IOException e) {
-                        System.err.println("Error sending message to a client: " + e.getMessage());
-                    }
+        if (containsBannedPhrase(message)) {
+            notifySenderOfBlockedMessage(senderSocket);
+            return;
+        }
+        for (Map.Entry<String, Socket> entry : clients.entrySet()) {
+            Socket socket = entry.getValue();
+            if (socket != senderSocket) {
+                try {
+                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                    writer.write(message);
+                    writer.newLine();
+                    writer.flush();
+                } catch (IOException e) {
+                    System.err.println("Error broadcasting message to " + entry.getKey() + ": " + e.getMessage());
                 }
             }
         }
     }
 
-    public synchronized void removeClient(Socket clientSocket) {
-        connectedClients.remove(clientSocket);
+    public synchronized void broadcastMessageExcluding(String message, Socket senderSocket, String[] excludedUsers) {
+        if (containsBannedPhrase(message)) {
+            notifySenderOfBlockedMessage(senderSocket);
+            return;
+        }
+        Set<String> excludedSet = new HashSet<>(Arrays.asList(excludedUsers));
+        for (Map.Entry<String, Socket> entry : clients.entrySet()) {
+            if (!excludedSet.contains(entry.getKey()) && !entry.getValue().equals(senderSocket)) {
+                try {
+                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(entry.getValue().getOutputStream()));
+                    writer.write(message);
+                    writer.newLine();
+                    writer.flush();
+                } catch (IOException e) {
+                    System.err.println("Error broadcasting message to " + entry.getKey() + ": " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    private boolean containsBannedPhrase(String message) {
+        return bannedPhrases.stream().anyMatch(message.toLowerCase()::contains);
+    }
+
+    private void notifySenderOfBlockedMessage(Socket senderSocket) {
         try {
-            clientSocket.close();
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(senderSocket.getOutputStream()));
+            writer.write("[BLOCKED] Your message contains a banned phrase and was not sent.");
+            writer.newLine();
+            writer.flush();
         } catch (IOException e) {
-            System.err.println("Error closing client socket: " + e.getMessage());
+            System.err.println("Error notifying sender about blocked message: " + e.getMessage());
         }
     }
 
