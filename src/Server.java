@@ -93,9 +93,6 @@ public class Server {
         return bannedPhrases;
     }
 
-    public String getServerName(){
-        return serverName;
-    }
     public static void main(String[] args) {
         String configFilePath = "server_config.txt"; // Update this path as needed
         Server server = new Server(configFilePath);
