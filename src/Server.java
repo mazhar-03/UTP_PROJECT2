@@ -16,7 +16,7 @@ public class Server {
     public Server(String configFilePath) {
         loadConfiguration(configFilePath);
         this.clientPool = Executors.newCachedThreadPool();
-        this.connectedClients = new ArrayList<>();
+        this.connectedClients = Collections.synchronizedList(new ArrayList<>());
     }
 
     private void loadConfiguration(String configFilePath) {
