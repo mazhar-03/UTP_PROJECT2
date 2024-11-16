@@ -13,7 +13,7 @@ public class Server {
 
     public Server(String configFilePath) {
         loadConfiguration(configFilePath);
-        this.clients = new ConcurrentHashMap<>();
+        this.clients = new HashMap<>();
         this.clientPool = Executors.newCachedThreadPool();
     }
 
@@ -45,18 +45,7 @@ public class Server {
         } catch (IOException e) {
             System.err.println("Error in server: " + e.getMessage());
         } finally {
-            shutdownClientPool();
-        }
-    }
-
-    private void shutdownClientPool() {
-        clientPool.shutdown();
-        try {
-            if (!clientPool.awaitTermination(60, TimeUnit.SECONDS)) {
-                clientPool.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            clientPool.shutdownNow();
+            clientPool.shutdown();
         }
     }
 
@@ -160,7 +149,7 @@ public class Server {
     }
 
     public static void main(String[] args) {
-        String configFilePath = "server_config.txt"; // Update this path as needed
+        String configFilePath = "server_details.txt"; // Update this path as needed
         Server server = new Server(configFilePath);
         server.start();
     }

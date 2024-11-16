@@ -1,5 +1,0 @@
-port=12345
-serverName=WhatsApp
-bannedPhrase=spam
-bannedPhrase=offensive
-bannedPhrase=advertisement

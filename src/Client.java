@@ -37,8 +37,6 @@ public class Client {
 
     private void handleOutgoingMessages() {
         try (Scanner scanner = new Scanner(System.in)) {
-            String username = scanner.nextLine();
-            sendMessage(username);
             System.out.println("Type 'exit' to disconnect.");
 
             while (true) {
@@ -77,7 +75,7 @@ public class Client {
         }
     }
 
-    private void sendMessage(String message) throws IOException {
+    public void sendMessage(String message) throws IOException {
         writer.write(message);
         writer.newLine();
         writer.flush();
@@ -94,8 +92,8 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        String host = "localhost"; // Replace with the server address if needed
-        int port = 12345;          // Replace with the server port if needed
+        String host = "localhost";
+        int port = 12345;
 
         Client client = new Client(host, port);
         client.start();

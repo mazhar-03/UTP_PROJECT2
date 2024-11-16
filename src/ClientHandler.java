@@ -1,8 +1,7 @@
 import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.Callable;
 
-class ClientHandler implements Callable<Void> {
+class ClientHandler implements Runnable {
     private final Socket clientSocket;
     private final Server server;
 
@@ -12,7 +11,7 @@ class ClientHandler implements Callable<Void> {
     }
 
     @Override
-    public Void call() {
+    public void run() {
         try (
                 BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))
@@ -23,10 +22,12 @@ class ClientHandler implements Callable<Void> {
 
             String clientName = reader.readLine();
             if (clientName == null || clientName.trim().isEmpty()) {
+                // giving them default username
                 clientName = "Client-" + clientSocket.getPort();
             }
 
             server.addClient(clientName, clientSocket);
+            server.broadcastMessage(clientName + " has joined the chat.", clientSocket);
 
             writer.write("Connected clients: " + String.join(", ", server.getClientNames()));
             writer.newLine();
@@ -67,12 +68,6 @@ class ClientHandler implements Callable<Void> {
 
                 if (message.startsWith("/send")) {
                     String[] parts = message.split(" ", 3);
-                    if (parts.length < 3) {
-                        writer.write("Usage: /send <username1,username2> <message>");
-                        writer.newLine();
-                        writer.flush();
-                        continue;
-                    }
 
                     String[] recipients = parts[1].split(",");
                     String userMessage = parts[2];
@@ -98,13 +93,6 @@ class ClientHandler implements Callable<Void> {
 
                 if (message.startsWith("/exclude")) {
                     String[] parts = message.split(" ", 3);
-                    if (parts.length < 3) {
-                        writer.write("Usage: /exclude <username1,username2> <message>");
-                        writer.newLine();
-                        writer.flush();
-                        continue;
-                    }
-
                     String[] excludedUsers = parts[1].split(",");
                     String userMessage = parts[2];
 
@@ -132,6 +120,5 @@ class ClientHandler implements Callable<Void> {
         } finally {
             server.removeClient(clientSocket);
         }
-        return null;
     }
 }
