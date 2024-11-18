@@ -47,6 +47,7 @@ class ClientHandler implements Runnable {
             writer.newLine();
             writer.flush();
 
+            //runs after JVM is shutting down
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
                     server.removeClient(clientSocket);
