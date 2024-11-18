@@ -64,6 +64,7 @@ class ClientHandler implements Runnable {
                 }
 
                 if (message.equalsIgnoreCase("exit")) {
+                    server.removeClient(clientSocket);
                     break;
                 }
 
@@ -124,10 +125,11 @@ class ClientHandler implements Runnable {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Error handling client: " + e.getMessage());
+            if (clientName != null)
+                System.out.println("Client disconnected");
         } finally {
             if (clientName != null) {
-//                server.removeClient(clientSocket);
+                server.removeClient(clientSocket);
                 server.broadcastMessage(clientName + " has left the chat.", clientSocket);
             }
         }

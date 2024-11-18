@@ -149,7 +149,7 @@ public class Server {
     }
 
     public static void main(String[] args) {
-        String configFilePath = "server_details.txt"; // Update this path as needed
+        String configFilePath = "config_files/server_details.txt"; // Update this path as needed
         Server server = new Server(configFilePath);
         server.start();
     }
