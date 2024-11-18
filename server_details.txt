@@ -1,5 +1,5 @@
 port=12345
 serverName=WhatsApp
-bannedPhrase=pjatk
-bannedPhrase=code
+bannedPhrase=mouse
+bannedPhrase=key
 bannedPhrase=ball

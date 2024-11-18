@@ -64,11 +64,12 @@ public class Client {
         try {
             String message;
             while ((message = reader.readLine()) != null) {
-                if (message.startsWith("[BLOCKED]")) {
-                    System.out.println("Server blocked your message: " + message.substring(9));
-                } else {
-                    System.out.println(message);
-                }
+//                if (message.startsWith("[BLOCKED]")) {
+//                    System.out.println("Server blocked your message: " + message.substring(9));
+//                } else {
+//                    System.out.println(message);
+//                }
+                System.out.println(message);
             }
         } catch (IOException e) {
             System.err.println("Error receiving messages: " + e.getMessage());

@@ -136,7 +136,7 @@ public class Server {
     private void notifySenderOfBlockedMessage(Socket senderSocket) {
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(senderSocket.getOutputStream()));
-            writer.write("[BLOCKED] Your message contains a banned phrase and was not sent.");
+            writer.write("Your message contains a banned phrase and was not sent.");
             writer.newLine();
             writer.flush();
         } catch (IOException e) {
