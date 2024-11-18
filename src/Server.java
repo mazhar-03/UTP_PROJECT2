@@ -49,8 +49,11 @@ public class Server {
         }
     }
 
-    public synchronized void addClient(String username, Socket socket) {
+    public synchronized boolean addClient(String username, Socket socket) {
+        if (clients.containsKey(username))
+            return false;
         clients.put(username, socket);
+        return true;
     }
 
     public synchronized void removeClient(Socket socket) {

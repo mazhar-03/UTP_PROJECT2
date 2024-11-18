@@ -10,26 +10,29 @@ class ClientHandler implements Runnable {
         this.server = server;
     }
 
-    @Override
     public void run() {
         String clientName = null;
         try (
                 BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))
         ) {
-            writer.write("Please provide your username:");
-            writer.newLine();
-            writer.flush();
-
-            String name = reader.readLine();
-            if (name == null || name.trim().isEmpty()) {
-                // Assigning default username
-                name = "Client-" + clientSocket.getPort();
+            // Reading username and adding client
+            clientName = reader.readLine();
+            if (clientName == null || clientName.trim().isEmpty()) {
+                clientName = "Client-" + clientSocket.getPort();
             }
-            clientName = name;
 
-            server.addClient(clientName, clientSocket);
-            server.broadcastMessage(clientName + " has joined the chat.", clientSocket);
+            // Attempt to add the client
+            if (!server.addClient(clientName, clientSocket)) {
+                writer.write("Username already in use. Connection rejected.");
+                writer.newLine();
+                writer.flush();
+                return; // Exit the thread if username is duplicate
+            }
+
+
+//            server.broadcastMessage(clientName + " has joined the chat.", clientSocket);
+            server.broadcastMessage(clientName + " has entered the chat.", clientSocket);
 
             writer.write("Connected clients: " + String.join(", ", server.getClientNames()));
             writer.newLine();
@@ -47,15 +50,7 @@ class ClientHandler implements Runnable {
             writer.newLine();
             writer.flush();
 
-            //runs after JVM is shutting down
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                try {
-                    server.removeClient(clientSocket);
-                } catch (Exception e) {
-                    System.err.println("Error during client shutdown: " + e.getMessage());
-                }
-            }));
-
+            // Listening for messages
             String message;
             while ((message = reader.readLine()) != null) {
                 if (message.trim().isEmpty()) {
@@ -64,9 +59,11 @@ class ClientHandler implements Runnable {
                 }
 
                 if (message.equalsIgnoreCase("exit")) {
-                    server.removeClient(clientSocket);
-                    break;
+                    server.broadcastMessage(clientName + " has left the chat.", clientSocket); // Inform others before removing the client
+                    server.removeClient(clientSocket); // Notify server to remove the client
+                    break; // Exit the loop gracefully
                 }
+
 
                 if (message.equalsIgnoreCase("/banned")) {
                     sendMessage("Banned phrases: " + String.join(", ", server.getBannedPhrases()));
@@ -74,47 +71,12 @@ class ClientHandler implements Runnable {
                 }
 
                 if (message.startsWith("/send")) {
-                    String[] parts = message.split(" ", 3);
-
-                    if (parts.length < 3) {
-                        sendMessage("Usage: /send <username1,username2> <message>");
-                        continue;
-                    }
-
-                    String[] recipients = parts[1].split(",");
-                    String userMessage = parts[2];
-
-                    if (server.getBannedPhrases().stream().anyMatch(userMessage.toLowerCase()::contains)) {
-                        sendMessage("Your message contains a banned phrase and will not be sent.");
-                        continue;
-                    }
-
-                    for (String recipient : recipients) {
-                        recipient = recipient.trim(); // Ensure whitespace is trimmed
-                        boolean success = server.sendMessageToUser(clientName + " (private): " + userMessage, recipient);
-                        if (!success) {
-                            sendMessage("User " + recipient + " not found. Available clients: " + String.join(", ", server.getClientNames()));
-                        }
-                    }
+                    handleSendCommand(message, clientName);
                     continue;
                 }
 
                 if (message.startsWith("/exclude")) {
-                    String[] parts = message.split(" ", 3);
-                    if (parts.length < 3) {
-                        sendMessage("Usage: /exclude <username1,username2> <message>");
-                        continue;
-                    }
-
-                    String[] excludedUsers = parts[1].split(",");
-                    String userMessage = parts[2];
-
-                    if (server.getBannedPhrases().stream().anyMatch(userMessage.toLowerCase()::contains)) {
-                        sendMessage("Your message contains a banned phrase and will not be broadcast.");
-                        continue;
-                    }
-
-                    server.broadcastMessageExcluding(clientName + ": " + userMessage, clientSocket, excludedUsers);
+                    handleExcludeCommand(message, clientName);
                     continue;
                 }
 
@@ -125,15 +87,65 @@ class ClientHandler implements Runnable {
                 }
             }
         } catch (IOException e) {
-            if (clientName != null)
-                System.out.println("Client disconnected");
-        } finally {
+            if (e.getMessage() != null && e.getMessage().contains("Connection reset")) {
+                System.out.println(clientName + " has disconnected.");
+            } else {
+                System.err.println("Error handling client: " + e.getMessage());
+            }
+        }
+        finally {
             if (clientName != null) {
                 server.removeClient(clientSocket);
                 server.broadcastMessage(clientName + " has left the chat.", clientSocket);
             }
         }
+
+
     }
+
+    private void handleSendCommand(String message, String clientName) throws IOException {
+        String[] parts = message.split(" ", 3);
+
+        if (parts.length < 3) {
+            sendMessage("Usage: /send <username1,username2> <message>");
+            return;
+        }
+
+        String[] recipients = parts[1].split(",");
+        String userMessage = parts[2];
+
+        if (server.getBannedPhrases().stream().anyMatch(userMessage.toLowerCase()::contains)) {
+            sendMessage("Your message contains a banned phrase and will not be sent.");
+            return;
+        }
+
+        for (String recipient : recipients) {
+            recipient = recipient.trim();
+            boolean success = server.sendMessageToUser(clientName + " (private): " + userMessage, recipient);
+            if (!success) {
+                sendMessage("User " + recipient + " not found. Available clients: " + String.join(", ", server.getClientNames()));
+            }
+        }
+    }
+
+    private void handleExcludeCommand(String message, String clientName) throws IOException {
+        String[] parts = message.split(" ", 3);
+        if (parts.length < 3) {
+            sendMessage("Usage: /exclude <username1,username2> <message>");
+            return;
+        }
+
+        String[] excludedUsers = parts[1].split(",");
+        String userMessage = parts[2];
+
+        if (server.getBannedPhrases().stream().anyMatch(userMessage.toLowerCase()::contains)) {
+            sendMessage("Your message contains a banned phrase and will not be broadcast.");
+            return;
+        }
+
+        server.broadcastMessageExcluding(clientName + ": " + userMessage, clientSocket, excludedUsers);
+    }
+
 
     public void sendMessage(String message) throws IOException {
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
