@@ -34,11 +34,9 @@ public class Server {
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println(serverName + " is running on port " + port + ".");
-
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                Thread clientThread = new Thread(new ClientHandler(clientSocket, this));
-                clientThread.start();
+                new Thread(new ClientHandler(clientSocket, this)).start();
             }
         } catch (IOException e) {
             System.err.println("Error in server: " + e.getMessage());
