@@ -2,19 +2,16 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.*;
 
 public class Server {
     private int port;
     private String serverName;
     private List<String> bannedPhrases;
     private final Map<String, Socket> clients;
-    private final ExecutorService clientPool;
 
     public Server(String configFilePath) {
         loadConfiguration(configFilePath);
         this.clients = new HashMap<>();
-        this.clientPool = Executors.newCachedThreadPool();
     }
 
     private void loadConfiguration(String configFilePath) {
@@ -40,12 +37,11 @@ public class Server {
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                clientPool.submit(new ClientHandler(clientSocket, this));
+                Thread clientThread = new Thread(new ClientHandler(clientSocket, this));
+                clientThread.start();
             }
         } catch (IOException e) {
             System.err.println("Error in server: " + e.getMessage());
-        } finally {
-            clientPool.shutdown();
         }
     }
 
