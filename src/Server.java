@@ -63,10 +63,6 @@ public class Server {
         }
     }
 
-    public synchronized List<String> getClientNames() {
-        return new ArrayList<>(clients.keySet());
-    }
-
     public synchronized boolean sendMessageToUser(String message, String username) {
         if (containsBannedPhrase(message)) {
             return false;
@@ -126,10 +122,6 @@ public class Server {
         }
     }
 
-    private boolean containsBannedPhrase(String message) {
-        return bannedPhrases.stream().anyMatch(message.toLowerCase()::contains);
-    }
-
     private void notifySenderOfBlockedMessage(Socket senderSocket) {
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(senderSocket.getOutputStream()));
@@ -139,6 +131,14 @@ public class Server {
         } catch (IOException e) {
             System.err.println("Error notifying sender about blocked message: " + e.getMessage());
         }
+    }
+
+    private boolean containsBannedPhrase(String message) {
+        return bannedPhrases.stream().anyMatch(message.toLowerCase()::contains);
+    }
+
+    public List<String> getClientNames() {
+        return new ArrayList<>(clients.keySet());
     }
 
     public List<String> getBannedPhrases() {
