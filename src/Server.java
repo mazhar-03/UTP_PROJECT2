@@ -7,7 +7,7 @@ public class Server {
     private int port;
     private String serverName;
     private List<String> bannedPhrases;
-    private final Map<String, Socket> clients;
+    private final Map<String, Socket> clients; //shared object
 
     public Server(String configFilePath) {
         loadConfiguration(configFilePath);
@@ -50,6 +50,7 @@ public class Server {
         return true;
     }
 
+    //other threads will have to wait until the method finishes before accessing or modifying the map.
     public synchronized void removeClient(Socket socket) {
         String username = null;
         for (Map.Entry<String, Socket> entry : clients.entrySet()) {
@@ -137,7 +138,8 @@ public class Server {
         return bannedPhrases.stream().anyMatch(message.toLowerCase()::contains);
     }
 
-    public List<String> getClientNames() {
+    // accessed by multiple threads simultaneously
+    public synchronized List<String> getClientNames() {
         return new ArrayList<>(clients.keySet());
     }
 

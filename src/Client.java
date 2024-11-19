@@ -19,7 +19,6 @@ public class Client {
             user = configReader.readLine().split("=")[1].trim();
         } catch (IOException e) {
             System.err.println("Error reading client configuration: " + e.getMessage());
-            System.exit(1);
         }
         this.serverHost = host;
         this.serverPort = port;

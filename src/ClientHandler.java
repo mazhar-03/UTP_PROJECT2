@@ -13,39 +13,22 @@ class ClientHandler implements Runnable {
     public void run() {
         String clientName = null;
         try (
-                BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))
+                BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
         ) {
             // Reading username and adding client
             clientName = reader.readLine();
+            if (clientName == null || clientName.trim().isEmpty()) {
+                clientName = "Client-" + clientSocket.getPort();
+            }
 
             // Attempt to add the client
             if (!server.addClient(clientName, clientSocket)) {
-                writer.write("Username already in use. Connection rejected.");
-                writer.newLine();
-                writer.flush();
+                sendMessage("Username already in use. Connection rejected.");
                 return; // Exit the thread if username is duplicate
             }
 
-
-//            server.broadcastMessage(clientName + " has joined the chat.", clientSocket);
             server.broadcastMessage(clientName + " has entered the chat.", clientSocket);
-
-            writer.write("Connected clients: " + String.join(", ", server.getClientNames()));
-            writer.newLine();
-            writer.write("Instructions:");
-            writer.newLine();
-            writer.write("1. Type your message to broadcast it to everyone.");
-            writer.newLine();
-            writer.write("2. Use '/send <username1,username2> <message>' to send to specific users.");
-            writer.newLine();
-            writer.write("3. Use '/exclude <username1,username2> <message>' to broadcast excluding specific users.");
-            writer.newLine();
-            writer.write("4. Use '/banned' to query banned phrases.");
-            writer.newLine();
-            writer.write("5. Type 'exit' to disconnect.");
-            writer.newLine();
-            writer.flush();
+            sendInstructions();
 
             // Listening for messages
             String message;
@@ -54,29 +37,21 @@ class ClientHandler implements Runnable {
                     sendMessage("Cannot send an empty message. Please type something.");
                     continue;
                 }
-
                 if (message.equalsIgnoreCase("exit")) {
-//                    server.broadcastMessage(clientName + " has left the chat.", clientSocket);
                     server.removeClient(clientSocket);
                     break; // Exit the loop gracefully
                 }
-
-
                 if (message.equalsIgnoreCase("/banned")) {
                     sendMessage("Banned phrases: " + String.join(", ", server.getBannedPhrases()));
-                    continue;
                 }
-
                 if (message.startsWith("/send")) {
                     handleSendCommand(message, clientName);
                     continue;
                 }
-
                 if (message.startsWith("/exclude")) {
                     handleExcludeCommand(message, clientName);
                     continue;
                 }
-
                 if (server.getBannedPhrases().stream().anyMatch(message.toLowerCase()::contains)) {
                     sendMessage("Your message contains a banned phrase and will not be broadcast.");
                 } else {
@@ -87,13 +62,22 @@ class ClientHandler implements Runnable {
             if (e.getMessage() == null && !e.getMessage().contains("Connection reset")) {
                 System.err.println("Error handling client: " + e.getMessage());
             }
+        } finally {
+            server.removeClient(clientSocket);
+            server.broadcastMessage(clientName + " has left the chat.", clientSocket);
+
         }
-        finally {
-            if (clientName != null) {
-                server.removeClient(clientSocket);
-                server.broadcastMessage(clientName + " has left the chat.", clientSocket);
-            }
-        }
+    }
+
+    private void sendInstructions() throws IOException {
+        sendMessage("Connected clients: " + String.join(", ", server.getClientNames()));
+        sendMessage("Instructions:");
+        sendMessage("1. Type your message to broadcast it to everyone.");
+        sendMessage("2. Use '/send <username1,username2> <message>' to send to specific users.");
+        sendMessage("3. Use '/exclude <username1,username2> <message>' to broadcast excluding specific users.");
+        sendMessage("4. Use '/banned' to query banned phrases.");
+        sendMessage("5. Type 'exit' to disconnect.");
+        System.out.println();
     }
 
     private void handleSendCommand(String message, String clientName) throws IOException {
