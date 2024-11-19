@@ -39,6 +39,7 @@ class ClientHandler implements Runnable {
                 }
                 if (message.equalsIgnoreCase("/banned")) {
                     sendMessage("Banned phrases: " + String.join(", ", server.getBannedPhrases()));
+                    continue;
                 }
                 if (message.startsWith("/send")) {
                     handleSendCommand(message, clientName);
