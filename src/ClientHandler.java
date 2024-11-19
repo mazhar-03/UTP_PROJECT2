@@ -84,9 +84,7 @@ class ClientHandler implements Runnable {
                 }
             }
         } catch (IOException e) {
-            if (e.getMessage() != null && e.getMessage().contains("Connection reset")) {
-                System.out.println(clientName + " has disconnected.");
-            } else {
+            if (e.getMessage() == null && !e.getMessage().contains("Connection reset")) {
                 System.err.println("Error handling client: " + e.getMessage());
             }
         }
