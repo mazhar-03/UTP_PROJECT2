@@ -18,9 +18,6 @@ class ClientHandler implements Runnable {
         ) {
             // Reading username and adding client
             clientName = reader.readLine();
-            if (clientName == null || clientName.trim().isEmpty()) {
-                clientName = "Client-" + clientSocket.getPort();
-            }
 
             // Attempt to add the client
             if (!server.addClient(clientName, clientSocket)) {
@@ -59,8 +56,8 @@ class ClientHandler implements Runnable {
                 }
 
                 if (message.equalsIgnoreCase("exit")) {
-                    server.broadcastMessage(clientName + " has left the chat.", clientSocket); // Inform others before removing the client
-                    server.removeClient(clientSocket); // Notify server to remove the client
+//                    server.broadcastMessage(clientName + " has left the chat.", clientSocket);
+                    server.removeClient(clientSocket);
                     break; // Exit the loop gracefully
                 }
 
@@ -99,8 +96,6 @@ class ClientHandler implements Runnable {
                 server.broadcastMessage(clientName + " has left the chat.", clientSocket);
             }
         }
-
-
     }
 
     private void handleSendCommand(String message, String clientName) throws IOException {

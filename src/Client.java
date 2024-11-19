@@ -59,13 +59,16 @@ public class Client {
             String userInput;
             while ((userInput = consoleReader.readLine()) != null) {
                 if (userInput.equalsIgnoreCase("exit")) {
-                    System.out.println("Disconnecting...");
+                    writer.write(userInput);
+                    writer.newLine();
+                    writer.flush();
                     break;
                 }
                 writer.write(userInput);
                 writer.newLine();
                 writer.flush();
             }
+            closeConnection();
         } catch (IOException e) {
             System.err.println("Could not connect to the server: " + e.getMessage());
         } finally {
@@ -78,19 +81,12 @@ public class Client {
             if (reader != null) reader.close();
             if (writer != null) writer.close();
             if (socket != null && !socket.isClosed()) socket.close();
-            System.out.println("Connection closed.");
         } catch (IOException e) {
             System.err.println("Error closing connection: " + e.getMessage());
         }
     }
 
     public static void main(String[] args) {
-        // Check if the configuration file path is provided as a program argument
-        if (args.length < 1) {
-            System.err.println("Usage: java Client <config_file_path>");
-            return;
-        }
-
         String configFilePath = args[0]; // Get the configuration file path from the arguments
 
         try {
