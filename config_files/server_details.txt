@@ -1,4 +1,4 @@
-port=12345
+port=9040
 serverName=WhatsApp
 bannedPhrase=mouse
 bannedPhrase=key

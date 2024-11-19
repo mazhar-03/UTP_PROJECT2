@@ -25,7 +25,7 @@ public class Server {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("bannedPhrase=")) {
-                    this.bannedPhrases.add(line.split("=", 2)[1].trim());
+                    bannedPhrases.add(line.split("=", 2)[1].trim());
                 }
             }
             System.out.println("Server configuration loaded successfully.");

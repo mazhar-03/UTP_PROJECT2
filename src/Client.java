@@ -87,7 +87,8 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        String configFilePath = args[0]; // Get the configuration file path from the arguments
+        // reading the args array
+        String configFilePath = args[0];
 
         try {
             // Create and start the client using the provided configuration file
