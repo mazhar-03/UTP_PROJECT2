@@ -17,9 +17,6 @@ class ClientHandler implements Runnable {
         ) {
             // Reading username and adding client
             clientName = reader.readLine();
-            if (clientName == null || clientName.trim().isEmpty()) {
-                clientName = "Client-" + clientSocket.getPort();
-            }
 
             // Attempt to add the client
             if (!server.addClient(clientName, clientSocket)) {
@@ -38,8 +35,7 @@ class ClientHandler implements Runnable {
                     continue;
                 }
                 if (message.equalsIgnoreCase("exit")) {
-                    server.removeClient(clientSocket);
-                    break; // Exit the loop gracefully
+                    break; //exit from the loop
                 }
                 if (message.equalsIgnoreCase("/banned")) {
                     sendMessage("Banned phrases: " + String.join(", ", server.getBannedPhrases()));
@@ -59,6 +55,7 @@ class ClientHandler implements Runnable {
                 }
             }
         } catch (IOException e) {
+            //no errors when client killed the program
             if (e.getMessage() == null && !e.getMessage().contains("Connection reset")) {
                 System.err.println("Error handling client: " + e.getMessage());
             }
@@ -87,7 +84,6 @@ class ClientHandler implements Runnable {
             sendMessage("Usage: /send <username1,username2> <message>");
             return;
         }
-
         String[] recipients = parts[1].split(",");
         String userMessage = parts[2];
 

@@ -67,7 +67,6 @@ public class Client {
                 writer.newLine();
                 writer.flush();
             }
-            closeConnection();
         } catch (IOException e) {
             System.err.println("Could not connect to the server: " + e.getMessage());
         } finally {
