@@ -26,7 +26,7 @@ public class Client {
         this.serverHost = host;
         this.serverPort = port;
         this.username = user;
-        this.executorService = Executors.newSingleThreadExecutor(); // Single thread for listening
+        this.executorService = Executors.newSingleThreadExecutor();
     }
 
     public void start() {

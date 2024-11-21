@@ -15,7 +15,7 @@ public class Server {
     public Server(String configFilePath) {
         loadConfiguration(configFilePath);
         this.clients = new HashMap<>();
-        this.clientPool = Executors.newCachedThreadPool(); // Use ExecutorService
+        this.clientPool = Executors.newFixedThreadPool(4); // Use ExecutorService
     }
 
     private void loadConfiguration(String configFilePath) {
@@ -45,9 +45,8 @@ public class Server {
             }
         } catch (IOException e) {
             System.err.println("Error in server: " + e.getMessage());
-        } finally {
-            clientPool.shutdown();
         }
+            clientPool.shutdown();
     }
 
     public synchronized boolean addClient(String username, Socket socket) {
