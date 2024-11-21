@@ -1,5 +1,7 @@
 import java.io.*;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Client {
     private final String serverHost;
@@ -8,6 +10,7 @@ public class Client {
     private Socket socket;
     private BufferedReader reader;
     private BufferedWriter writer;
+    private final ExecutorService executorService;
 
     public Client(String configFilePath) {
         String host = null;
@@ -23,6 +26,7 @@ public class Client {
         this.serverHost = host;
         this.serverPort = port;
         this.username = user;
+        this.executorService = Executors.newSingleThreadExecutor(); // Single thread for listening
     }
 
     public void start() {
@@ -39,8 +43,8 @@ public class Client {
             writer.newLine();
             writer.flush();
 
-            // Start a thread to listen for incoming messages
-            new Thread(() -> {
+            // start a task to listen for incoming messages
+            executorService.submit(() -> {
                 try {
                     String serverMessage;
                     while ((serverMessage = reader.readLine()) != null) {
@@ -51,7 +55,8 @@ public class Client {
                         System.err.println("Connection to server lost.");
                     }
                 }
-            }).start();
+            });
+
 
             // Handle outgoing messages
             BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
@@ -81,6 +86,8 @@ public class Client {
             if (socket != null && !socket.isClosed()) socket.close();
         } catch (IOException e) {
             System.err.println("Error closing connection: " + e.getMessage());
+        } finally {
+            executorService.shutdown();
         }
     }
 

@@ -2,16 +2,20 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
     private int port;
     private String serverName;
     private List<String> bannedPhrases;
-    private final Map<String, Socket> clients; //shared object
+    private final Map<String, Socket> clients;
+    private final ExecutorService clientPool;
 
     public Server(String configFilePath) {
         loadConfiguration(configFilePath);
         this.clients = new HashMap<>();
+        this.clientPool = Executors.newCachedThreadPool(); // Use ExecutorService
     }
 
     private void loadConfiguration(String configFilePath) {
@@ -34,12 +38,15 @@ public class Server {
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println(serverName + " is running on port " + port + ".");
+
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                new Thread(new ClientHandler(clientSocket, this)).start();
+                clientPool.submit(new ClientHandler(clientSocket, this));
             }
         } catch (IOException e) {
             System.err.println("Error in server: " + e.getMessage());
+        } finally {
+            clientPool.shutdown();
         }
     }
 
