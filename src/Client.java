@@ -26,7 +26,7 @@ public class Client {
         this.serverHost = host;
         this.serverPort = port;
         this.username = user;
-        this.executorService = Executors.newSingleThreadExecutor();
+        this.executorService = Executors.newFixedThreadPool(2);
     }
 
     public void start() {
@@ -43,6 +43,20 @@ public class Client {
             writer.newLine();
             writer.flush();
 
+            //killing the app
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    if (socket != null && !socket.isClosed()) {
+                        writer.write("exit"); // Notify the server
+                        writer.newLine();
+                        writer.flush();
+                        closeConnection();
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error during shutdown: " + e.getMessage());
+                }
+            }));
+
             // start a task to listen for incoming messages
             executorService.submit(() -> {
                 try {
@@ -57,11 +71,11 @@ public class Client {
                 }
             });
 
-
-            // Handle outgoing messages
+            // Handle outgoing messages by send
             BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
             String userInput;
             while ((userInput = consoleReader.readLine()) != null) {
+                //cleans the client's resources and stops the reading user input.
                 if (userInput.equalsIgnoreCase("exit")) {
                     writer.write(userInput);
                     writer.newLine();

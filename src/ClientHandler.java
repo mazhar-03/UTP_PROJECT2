@@ -35,7 +35,7 @@ class ClientHandler implements Runnable {
                     continue;
                 }
                 if (message.equalsIgnoreCase("exit")) {
-                    break; //exit from the loop
+                    break; //exit from the loop and goes into the finally block
                 }
                 if (message.equalsIgnoreCase("/banned")) {
                     sendMessage("Banned phrases: " + String.join(", ", server.getBannedPhrases()));
@@ -56,10 +56,7 @@ class ClientHandler implements Runnable {
                 }
             }
         } catch (IOException e) {
-            //no errors when client killed the program
-            if (e.getMessage() == null && !e.getMessage().contains("Connection reset")) {
-                System.err.println("Error handling client: " + e.getMessage());
-            }
+            System.err.println("Error handling client: " + e.getMessage());
         } finally {
             server.removeClient(clientSocket);
             server.broadcastMessage(clientName + " has left the chat.", clientSocket);
